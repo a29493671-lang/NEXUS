@@ -1,0 +1,43 @@
+name: NEXUS Docker Build Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  docker-build:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Backend Image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./nexus-platform
+          file: ./nexus-platform/Dockerfile
+          push: false
+          tags: nexus-backend:latest
+
+      - name: Build Demo Application Image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./nexus-demo-app
+          file: ./nexus-demo-app/Dockerfile
+          push: false
+          tags: nexus-demo:latest
+
+      - name: Build Frontend Image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./nexus-frontend
+          file: ./nexus-frontend/Dockerfile
+          push: false
+          tags: nexus-frontend:latest
