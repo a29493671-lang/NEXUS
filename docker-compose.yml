@@ -1,0 +1,83 @@
+
+services:
+  demo:
+    build:
+      context: ./nexus-demo-app
+    container_name: nexus-demo
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - nexus-network
+
+  backend:
+    build:
+      context: ./nexus-platform
+    container_name: nexus-backend
+    ports:
+      - "8001:8001"
+    env_file:
+      - ./nexus-platform/.env
+    environment:
+      DEMO_APP_URL: http://demo:8000/health
+      RECOVERY_MODE: docker
+      DEMO_CONTAINER_NAME: nexus-demo
+      DOCKER_HOST: unix:///var/run/docker.sock
+      DATABASE_URL: sqlite:////app/nexus.db
+    volumes:
+      - ./nexus-platform/nexus.db:/app/nexus.db
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      demo:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/health')"
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - nexus-network
+
+  frontend:
+    build:
+      context: ./nexus-frontend
+    container_name: nexus-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - -q
+        - -O
+        - /dev/null
+        - http://127.0.0.1/
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    networks:
+      - nexus-network
+
+networks:
+  nexus-network:
+    driver: bridge
