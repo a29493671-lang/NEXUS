@@ -5,7 +5,7 @@ services:
       context: ./nexus-demo-app
     container_name: nexus-demo
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     restart: unless-stopped
     healthcheck:
       test:
@@ -25,7 +25,7 @@ services:
       context: ./nexus-platform
     container_name: nexus-backend
     ports:
-      - "8001:8001"
+      - "127.0.0.1:8001:8001"
     env_file:
       - ./nexus-platform/.env
     environment:
@@ -59,7 +59,9 @@ services:
       context: ./nexus-frontend
     container_name: nexus-frontend
     ports:
-      - "5173:80"
+      - "127.0.0.1:5173:80"
+    volumes:
+      - ./nexus-frontend/.htpasswd:/etc/nginx/.htpasswd:ro
     depends_on:
       backend:
         condition: service_healthy
@@ -71,7 +73,7 @@ services:
         - -q
         - -O
         - /dev/null
-        - http://127.0.0.1/
+        - http://127.0.0.1/nginx-health
       interval: 15s
       timeout: 5s
       retries: 5

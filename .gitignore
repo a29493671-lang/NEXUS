@@ -35,3 +35,6 @@ Thumbs.db
 
 nexus-frontend/src/App_backup.txt
 nexus-platform/test_gemini.py
+
+# NEXUS web authentication credentials
+nexus-frontend/.htpasswd
