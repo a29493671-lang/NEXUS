@@ -40,9 +40,49 @@ NEXUS consists of three main Docker services:
 2. **Backend:** Handles health monitoring, incident management, Gemini diagnosis, database operations, and Docker-based recovery.
 3. **Frontend:** Displays the monitoring dashboard and incident information through a React interface served by Nginx.
 
-All services communicate through an internal Docker network.
+All three services communicate through an internal Docker network.
 
-The backend also connects to the Docker socket to perform authorized container recovery operations.
+The backend also connects to the Docker socket to perform container recovery operations.
+
+### Architecture Diagram
+
+```mermaid
+flowchart TB
+    U["User"] --> CF["Cloudflare Quick Tunnel (Optional)"]
+    CF --> FE["React + TypeScript Frontend<br/>Nginx + Basic Authentication"]
+
+    FE <-->|"HTTP API Requests"| BE["FastAPI Backend"]
+
+    subgraph DOCKER["NEXUS Docker Network"]
+        BE --> MON["Monitoring Service"]
+        MON -->|"Health Checks"| DEMO["Demo Application"]
+
+        MON -->|"Failure Detected"| INC["Incident Management"]
+
+        INC --> DB[("SQLite Database")]
+        INC --> DIAG["AI Diagnosis Service"]
+
+        DIAG -->|"Diagnosis Request"| GEM["Google Gemini AI"]
+        GEM -->|"Diagnostic Report"| DIAG
+        DIAG -.->|"Fallback if AI unavailable"| RULE["Rule-Based Diagnosis"]
+
+        DIAG --> REC["Recovery Engine"]
+        RULE --> REC
+
+        REC -->|"Docker API via Socket"| ENGINE["Docker Engine"]
+        ENGINE -->|"Restart Container"| DEMO
+
+        REC -->|"Verify Recovery"| VERIFY["Health Verification"]
+        VERIFY -->|"Recovery Result"| DB
+        DB -->|"Incident and Recovery Data"| BE
+    end
+
+    style FE fill:#dbeafe,stroke:#2563eb,color:#111827
+    style BE fill:#d1fae5,stroke:#059669,color:#111827
+    style GEM fill:#fef3c7,stroke:#d97706,color:#111827
+    style DEMO fill:#ede9fe,stroke:#7c3aed,color:#111827
+    style DB fill:#f3f4f6,stroke:#6b7280,color:#111827
+```
 
 ## How It Works
 
@@ -50,11 +90,10 @@ The backend also connects to the Docker socket to perform authorized container r
 2. If the application fails, NEXUS creates an incident.
 3. The diagnosis service sends relevant incident information to Google Gemini.
 4. Gemini analyses the failure and returns a diagnostic report.
-5. The recovery service attempts to restart the affected Docker container.
-6. NEXUS checks the application's health again.
-7. The recovery result is stored in the database and displayed on the dashboard.
-
-If Gemini is unavailable, the platform can use rule-based fallback diagnosis.
+5. If Gemini is unavailable, the platform can use rule-based fallback diagnosis.
+6. The recovery service attempts to restart the affected Docker container.
+7. NEXUS checks the application's health again.
+8. The recovery result is stored in the database and displayed on the dashboard.
 
 ## Project Structure
 
@@ -144,17 +183,17 @@ docker compose up -d --build
 
 Open:
 
-`http://localhost:5173`
+http://localhost:5173
 
 The dashboard is protected by Basic Authentication.
 
-Backend API:
+**Backend API:**
 
-`http://localhost:8001`
+http://localhost:8001
 
-Demo application:
+**Demo Application:**
 
-`http://localhost:8000`
+http://localhost:8000
 
 ### 6. Stop the Platform
 
