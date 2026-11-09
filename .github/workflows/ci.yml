@@ -3,9 +3,13 @@ name: NEXUS CI Pipeline
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      - feature/frontend-ui-refresh
+
   pull_request:
-    branches: [main]
+    branches:
+      - main
 
 jobs:
   backend-check:
